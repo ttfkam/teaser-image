@@ -59,15 +59,21 @@ class TeaserImage extends HTMLCanvasElement {
     this.redraw();
   }
   
+  get target() { return this.getAttribute("target") }
+  set target(newTarget) { this.setAttribute("target", newTarget) }
+
+  get method() { return this.getAttribute("method") }
+  set method(newMethod) { this.setAttribute("method", newMethod) }
+  
   get rows() { return this._regions.length / this._columns }
   get columns() { return this._columns }
 
   attributeChangedCallback(attrName, oldVal, newVal) {
-    if (attrName === "output-format") {
-      this.outputFormat = newVal;
-    } else if (attrName === "dimensions") {
-      this.dimensions = newVal;
+    if (!PROCESSED_ATTRS[attr_name]) {
+      return;
     }
+    let propName = attrName.replace(/-(.)/g, (all, sub1) => sub1.toUpperCase());
+    this[propName] = newVal;
   }
 
   boundingBox(index) {
@@ -94,15 +100,15 @@ class TeaserImage extends HTMLCanvasElement {
     }
   }
   
-  save(url) {
+  save() {
     return new Promise(function(resolve, reject) {
       this.toBlob(blob => {
         let params = {
-              method: "PUT",
+              method: this.method || "PUT",
               credentials: "include",
               body: blob
             };
-        fetch(url, params).then(response => {
+        fetch(this.target, params).then(response => {
           if (response.status <= 204) {
             resolve(response.status);
           } else {
@@ -174,6 +180,11 @@ const OUTPUT_FORMATS = {
         jpeg: "image/jpeg",
         png: "image/png",
         webp: "image/webp"
+      },
+      PROCESSED_ATTRS = {
+        "output-format": true,
+        "output-quality": true,
+        "dimensions": true
       };
 
 function error(message) {
@@ -184,3 +195,5 @@ function error(message) {
 }
 
 document.registerElement('teaser-image', TeaserImage);
+
+// @license-end
